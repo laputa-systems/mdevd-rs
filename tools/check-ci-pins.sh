@@ -13,7 +13,7 @@ tools/check-deps.sh
 tools/check-pins.sh
 
 echo "check-ci-pins: toolchain pin"
-grep -q 'channel = "nightly-2026-09-15"' rust-toolchain.toml
+grep -q 'channel = "nightly-2026-11-09"' rust-toolchain.toml
 
 echo "check-ci-pins: workflow pins are full SHAs"
 if rg -n 'uses:\s*[0-9a-f]{40}\s*(#|$)' .github/workflows; then

@@ -20,7 +20,7 @@ targets with sizes). All binaries are static (`DT_NEEDED` count 0, no
 
 ## Pinned build inputs
 
-- Toolchain `nightly-2026-09-15` plus `rust-src`/`clippy`
+- Toolchain `nightly-2026-11-09` plus `rust-src`/`clippy`
   (`rust-toolchain.toml` in each repo), `Cargo.lock` enforced.
 - x86_64 link: container `~/.cargo` kache wrapper + mold; aarch64 link:
   `RUSTFLAGS="-Clinker=mold -Clinker-flavor=ld"` (mold links both
