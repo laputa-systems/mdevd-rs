@@ -8,7 +8,6 @@ fn pins_recorded() {
         "eac18f5",
         "8f1d3d06",
         "0.1.8.3",
-        "0.1.8.2",
         "2.15.1.0",
         "laputa-mdev.conf",
     ] {

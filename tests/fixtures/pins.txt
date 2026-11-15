@@ -2,6 +2,7 @@
 mdevd-rs base (== origin/main HEAD at preflight): eac18f5
 libudev-zero fork master HEAD: 8f1d3d0624496f1c4967f18d6afaddbd552d8bce
 upstream mdevd release (this package): 0.1.8.3 (package/info)
+libskarnet (guest build dependency, package/deps-build): 2.15.1.0
 
 # Fixture provenance (all sources read-only; do not modify upstream copies):
 # - tests/fixtures/laputa-mdev.conf <- laputa/packages/baselayout/files/rootfs/etc/mdev.conf
