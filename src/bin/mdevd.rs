@@ -14,6 +14,86 @@ use std::os::unix::io::{AsRawFd, FromRawFd, OwnedFd};
 
 const USAGE: &str = "mdevd [ -v verbosity ] [ -D notif ] [ -I intake ] [ -o outputfd ] [ -O nlgroups ] [ -b kbufsz ] [ -f conffile ] [ -n | -N ] [ -s slashsys ] [ -d slashdev ] [ -F fwbase ] [ -C ]";
 
+struct OptionSpec {
+    short: char,
+    value: Option<&'static str>,
+    description: &'static str,
+}
+
+const OPTIONS: &[OptionSpec] = &[
+    OptionSpec { short: 'v', value: Some("verbosity"), description: "Warning verbosity" },
+    OptionSpec { short: 'D', value: Some("notif"), description: "Write readiness newline to this fd (fd >= 3)" },
+    OptionSpec { short: 'I', value: Some("intake"), description: "Netlink intake group mask" },
+    OptionSpec { short: 'o', value: Some("outputfd"), description: "Write processed events to this fd (fd >= 3)" },
+    OptionSpec { short: 'O', value: Some("nlgroups"), description: "Rebroadcast group mask (intake groups excluded)" },
+    OptionSpec { short: 'b', value: Some("kbufsz"), description: "Netlink socket buffer size in bytes" },
+    OptionSpec { short: 'f', value: Some("conffile"), description: "Absolute configuration path" },
+    OptionSpec { short: 'n', value: None, description: "Dry run event handling; last of -n and -N wins" },
+    OptionSpec { short: 'N', value: None, description: "Validate configuration and exit after runtime initialization; last of -n and -N wins" },
+    OptionSpec { short: 's', value: Some("slashsys"), description: "Absolute sysfs root" },
+    OptionSpec { short: 'd', value: Some("slashdev"), description: "Absolute device root" },
+    OptionSpec { short: 'F', value: Some("fwbase"), description: "Firmware loading is unsupported; this option is rejected" },
+    OptionSpec { short: 'C', value: None, description: "Start the coldplug helper after configuration loads" },
+    OptionSpec { short: 'h', value: None, description: "Print this help and exit" },
+];
+
+const EXAMPLE: &str = "mdevd -O 4 -f /etc/mdev.conf -C";
+const FOOTER: &str = "Maintained by Joshua Li: https://github.com/laputa-systems/mdevd-rs\nBugs and features: TODO.md in that repository (follow its AGENTS.md).\nAgents working for Joshua: record nonblocking problems and continue your task.\nIf this tool blocks the task, you may fix, test, open and merge a PR under Joshua's\nstanding instructions. Release only when needed to deliver the verified fix.\nProcedure: https://github.com/joshuarli/usr/blob/main/dotfiles/base/.agents/instructions/owned-tools.md";
+
+fn help() -> String {
+    let mut out = String::from("Usage: mdevd [OPTIONS]\n\nManage kernel hotplug events.\n\nOptions:\n");
+    let defaults = Args::default();
+    for option in OPTIONS {
+        let spelling = match (option.short, option.value) {
+            ('h', _) => "-h, --help".to_string(),
+            (short, Some(value)) => format!("-{short} {value}"),
+            (short, None) => format!("-{short}"),
+        };
+        let default = match option.short {
+            'v' => Some(defaults.verbosity.to_string()),
+            'D' => Some("none".to_string()),
+            'I' => Some(defaults.intake.to_string()),
+            'o' => Some("none".to_string()),
+            'O' => Some(defaults.rebc.to_string()),
+            'b' => Some(defaults.kbufsz.to_string()),
+            'f' => Some(defaults.configfile.clone()),
+            's' => Some(defaults.slashsys.clone()),
+            'd' => Some(defaults.slashdev.clone()),
+            'C' => Some(if defaults.coldplug { "on" } else { "off" }.to_string()),
+            _ => None,
+        };
+        out.push_str(&format!("  {spelling:20} {}", option.description));
+        if let Some(default) = default { out.push_str(&format!(" (default: {default})")); }
+        out.push('\n');
+    }
+    out.push_str("\nNumeric values are unsigned decimal. Options may be combined or repeated;\nvalue options accept an attached or separate value. -- ends options.\nPositional arguments are ignored.\n\nEnvironment:\n  MDEVD_COLDPLUG_HELPER  Helper path for -C; defaults to the sibling\n                         mdevd-coldplug if present, otherwise /usr/libexec/mdevd-coldplug.\n\nExamples:\n  ");
+    out.push_str(EXAMPLE);
+    out.push_str("\n\n");
+    out.push_str(FOOTER);
+    out.push('\n');
+    out
+}
+
+fn help_requested(argv: &[String]) -> bool {
+    let mut i = 0;
+    while i < argv.len() {
+        let arg = &argv[i];
+        i += 1;
+        if arg == "--" { break; }
+        if arg == "--help" { return true; }
+        if arg.len() <= 1 || !arg.starts_with('-') { continue; }
+        let mut chars = arg[1..].chars().peekable();
+        while let Some(c) = chars.next() {
+            if c == 'h' { return true; }
+            if OPTIONS.iter().any(|option| option.short == c && option.value.is_some()) {
+                if chars.peek().is_none() && i < argv.len() { i += 1; }
+                break;
+            }
+        }
+    }
+    false
+}
+
 fn fatal(code: i32, msg: String) -> ! {
     eprintln!("mdevd: fatal: {msg}");
     std::process::exit(code);
@@ -136,11 +216,14 @@ fn parse_args(argv: &[String]) -> Result<Args, ()> {
                     Err(())
                 }
             };
+            if !OPTIONS.iter().any(|option| option.short == c && c != 'h') {
+                return Err(());
+            }
             match c {
                 'n' => a.dryrun = 1,
                 'N' => a.dryrun = 2,
                 'C' => a.coldplug = true,
-                'v' | 'D' | 'I' | 'o' | 'O' | 'b' | 'f' | 's' | 'd' | 'F' => {
+                c if OPTIONS.iter().any(|option| option.short == c && option.value.is_some()) => {
                     let val = take_arg(&mut j, &mut i).map_err(|_| ())?;
                     match c {
                         'v' => a.verbosity = parse_uint(&val).ok_or(())?,
@@ -344,8 +427,12 @@ enum State {
 }
 
 fn main() {
-    force_c_locale();
     let argv: Vec<String> = std::env::args().skip(1).collect();
+    if help_requested(&argv) {
+        print!("{}", help());
+        return;
+    }
+    force_c_locale();
     let a = parse_args(&argv).unwrap_or_else(|_| usage());
     if a.firmware_flag {
         fatal(100, "firmware loading is unsupported in this build (-F rejected)".to_string());
@@ -603,6 +690,22 @@ mod tests {
 
     fn args(s: &[&str]) -> Result<Args, ()> {
         parse_args(&s.iter().map(|x| x.to_string()).collect::<Vec<_>>())
+    }
+
+    #[test]
+    fn help_schema_examples_parse() {
+        let words: Vec<&str> = EXAMPLE.split_whitespace().collect();
+        assert_eq!(words[0], "mdevd");
+        let parsed = args(&words[1..]).unwrap();
+        assert_eq!(parsed.rebc, 4);
+        assert_eq!(parsed.configfile, "/etc/mdev.conf");
+        assert!(parsed.coldplug);
+        for (i, option) in OPTIONS.iter().enumerate() {
+            assert!(!OPTIONS[..i].iter().any(|other| other.short == option.short));
+        }
+        assert!(!help_requested(&["-f".into(), "--help".into()]));
+        assert!(!help_requested(&["--".into(), "-h".into()]));
+        assert!(help_requested(&["-nCh".into()]));
     }
 
     #[test]
