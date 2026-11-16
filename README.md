@@ -7,6 +7,9 @@ and rebroadcasts processed events for libudev-zero consumers.
 
 ## Run
 
+Run `mdevd --help` for the complete option reference and an example.
+A bare `mdevd` invocation starts the daemon.
+
 ```
 mdevd -f /etc/mdev.conf -d /dev -s /sys -O 4 -D <ready-fd> -o <out-fd>
 mdevd -N -f /etc/mdev.conf -d /dev -s /sys   # validate config and exit
