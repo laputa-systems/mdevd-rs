@@ -36,8 +36,8 @@ jobs:
               kvm_gid=$(stat -c %g /dev/kvm)
               kvm_group=$(awk -F: -v gid="$kvm_gid" "\$3 == gid {print \$1; exit}" /etc/group)
               if [ -z "$kvm_group" ]; then
-                addgroup -g "$kvm_gid" kvm
-                kvm_group=kvm
+                kvm_group=runner-kvm-device
+                addgroup -g "$kvm_gid" "$kvm_group"
               fi
               addgroup builder "$kvm_group"
               mv /root/.cargo /root/.rustup /home/builder/
