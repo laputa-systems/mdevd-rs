@@ -178,6 +178,24 @@ and checked the exit, stderr usage and empty stdout. The daemon baseline
 returned 101 before the change. The ordinary CLI and binary parser cases
 and Clippy passed in the same Alpine builder.
 
+
+The engine now verifies that valid event numbers win as a pair, invalid
+numbers fall back to the complete sysfs pair, and an unterminated sysfs
+`DEVNAME` reaches the actual node decision. At the exact device-name
+limit the dry run reports the expected warning. All 14 engine cases
+and Clippy passed on native ARM64 musl.
+
+Serial cargo-mutants 27.1.0 selected the same 44 engine mutations at
+`8f38cb9` and with the new cases. Select `--file src/engine/mod.rs`,
+`--cargo-test-arg=--test --cargo-test-arg=engine` and the line expression
+`src/engine/mod.rs:(38[4-9]|39[0-9]|40[0-9]|42[6-9]|4[6-9][0-9]|5[01][0-9]|52[0-3]):`.
+The baseline caught 38 and missed five. The candidate caught 40 and
+missed three. Both had one compiler rejection because `Device` has
+no `Default`. The lookup's nonempty constant needle makes the changed
+short-input guard equivalent. The other two lookup variants differ
+only when the file contains exactly the marker and no device name.
+That malformed-file boundary and wider engine mutation stay in DSLP-4.
+
 ## Tickets
 
 
