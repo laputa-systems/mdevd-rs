@@ -195,7 +195,11 @@ fn scan_dir(
 
 fn main() {
     force_c_locale();
-    let argv: Vec<String> = std::env::args().skip(1).collect();
+    let argv = std::env::args_os()
+        .skip(1)
+        .map(std::ffi::OsString::into_string)
+        .collect::<Result<Vec<_>, _>>()
+        .unwrap_or_else(|_| usage());
     let a = parse_args(&argv).unwrap_or_else(|_| usage());
     let nlgroup = a.nlgroup & !1;
     let nlfd = if nlgroup != 0 {
