@@ -18,6 +18,13 @@ runner errors. The unasserted socket smoke was removed. The shell fixture
 checks exact opt-in selection and failure propagation without opening netlink.
 The real Linux namespace exchange remains a separate verification boundary.
 
+The default build at `dd4d59a5a0eb7a38aac973630f60ac768de0e03d`
+passed 64 tests and explicitly ignored ten opt-in cases. The same
+shell witness now runs through `make test`. It refuses the old
+selection without `--ignored` and propagates a failed test status.
+The existing CI provisioning already supplies ripgrep. The fixture
+uses local command stubs and leaves the live namespace checks separate.
+
 ## Tickets
 
 ### DSLP-2 · P2 · Diagnose: ultrareview into this backlog
