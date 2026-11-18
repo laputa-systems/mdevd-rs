@@ -60,3 +60,14 @@ the matching block node (identity from `/sys/block/vda/dev`, mode 660),
 emit framed `-o` output carrying `ACTION`, `DEVNAME`, `MAJOR`, and `MINOR`,
 pass a real `mdevd-coldplug -s /sys -O 4` sync, and exit 0 on `SIGTERM`.
 Guest mutations stay inside the guest; host sysfs and `/dev` are untouched.
+The preparation log is written to `.work/qemu-mdevd-prepare.log`.
+Preparation in the disposable builder used its container root so the
+verified guest APK triggers could run inside the guest filesystem.
+The trial mounted its disposable worktree and exposed the host's
+`/dev/kvm` device to the builder.
+
+The [native x86-64 run](https://github.com/laputa-systems/mdevd-rs/actions/runs/44373744734)
+at `ade8f07d2fd6632bf217f04e585929c16fe240e5` used the pinned Alpine
+3.24.2 musl builder and QEMU 11.0.3. The console reached
+`MDEVD_QEMU_NODE_OK` and `MDEVD_QEMU_OK`. Its SHA-256 is
+`9658d6c91e9df564165df8d4d03da872a3c0f8f40a47da5897f44abe85cce062`.

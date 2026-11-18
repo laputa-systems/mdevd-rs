@@ -1,8 +1,4 @@
 #!/bin/sh
-# C1: CI pin and close-out gate. Verifies locked deps, reproducible musl
-# targets, full-SHA workflow pins, attribution, native-dep closure,
-# dead-code removal, and review clearance, then prints the final report of
-# unverified kernel behavior.
 set -eu
 cd "$(dirname "$0")/.."
 ROOT=$PWD
@@ -69,13 +65,11 @@ fi
 cargo clippy --locked -q --all-targets
 echo "check-ci-pins: clippy clean"
 
-echo "check-ci-pins: ultrareview P1/P2 clear"
+echo "check-ci-pins: explicit panics and expects"
 if rg -n 'panic!\(|expect\(' src/ | grep -v test; then
   echo "check-ci-pins: note: explicit panics in src above (must be unreachable paths)" >&2
 fi
-echo "check-ci-pins: P1/P2: no blocking findings (full suite green, clippy clean, adversarial + privileged pass)"
-
-echo "check-ci-pins: repro musl targets"
+echo "check-ci-pins: musl artifacts"
 for target in x86_64-unknown-linux-musl aarch64-unknown-linux-musl; do
   bin="target/$target/release/mdevd"
   test -x "$bin" || { echo "check-ci-pins: missing $bin (run the C1 musl builds first)" >&2; exit 1; }
@@ -85,15 +79,4 @@ for target in x86_64-unknown-linux-musl aarch64-unknown-linux-musl; do
 done
 echo "check-ci-pins: musl binaries present"
 
-cat <<'REPORT'
-final report: unverified kernel behavior
-- Daemon-driven device-node creation from kernel events carrying major/minor
-  numbers remains unverified. Private dummy-interface events carry no
-  major/minor, so they exercise publication only; real node creation is
-  proven on private tmpfs through RealOps instead.
-- Real hardware coldplug remains outside the synthetic-root boundary.
-- Perf numbers in docs/perf.md come from a busy host (load ~50 on 32 cores);
-  quiet-host confirmation of medians is open, but all Charter thresholds
-  (RSS growth, FD delta, idle/coldplug <=2x C) pass there.
-REPORT
 echo "check-ci-pins: OK"

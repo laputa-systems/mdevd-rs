@@ -7,9 +7,14 @@
 # Guest mutations stay inside the guest; host sysfs and /dev are untouched.
 set -eu
 cd "$(dirname "$0")/.."
-bash tools/build-qemu-guest.sh 2>&1 | tail -n 5
 mkdir -p .work/tmp
 export TMPDIR="$PWD/.work/tmp"
+BUILD_LOG="$PWD/.work/qemu-mdevd-prepare.log"
+if ! bash tools/build-qemu-guest.sh > "$BUILD_LOG" 2>&1; then
+  tail -n 40 "$BUILD_LOG" >&2
+  exit 1
+fi
+tail -n 5 "$BUILD_LOG"
 QMP_SOCK="$PWD/.work/qmp-mdevd.sock"
 CONSOLE="$PWD/.work/qemu-mdevd-console.log"
 rm -f "$QMP_SOCK" "$CONSOLE"
