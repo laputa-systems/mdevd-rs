@@ -62,25 +62,22 @@ descriptors at four across the measured 10,000 events.
 
 Tests ran the seven config tests in the fleet's native ARM64 musl
 toolchain image. Cargo-mutants 27.1.0 tested 14 identities across
-`scan_decimal`, `scan_octal` and `validate_v1`. It caught seven and
-classified seven as unviable.
+`scan_decimal`, `scan_octal` and `validate_v1` serially and caught all 14.
 
-The same runner tested all 147 identities in the two table-driven
-parser passes. After retrying both initial timeouts at 30 seconds,
-51 were caught, 88 were unviable, seven survived and one still hung.
-The repeated hang changes the first-pass input offset increment to
-multiplication, leaving offset zero at zero. Four survivors change
-the first-pass rule or environment counters. Three change when the
-second pass records path or command offsets. Those survivors remain
-open under DSLP-4.
+The two table-driven parser passes accounted for all 147 selected
+identities in the same serial run. It caught 124, left 18 survivors,
+and timed out on two changed offset increments. Three replacements
+were unviable because `Rule` or `EnvMatch` lacks a `Default`
+implementation. Parallel local runs classified intermittent
+missing-object linker failures as unviable. The serial run supersedes
+those counts. The surviving parser decisions remain open under DSLP-4.
 
 To repeat, run Cargo-mutants 27.1.0 on a fresh archive of
 `f5dacd088da84260022288780f678a449d280e6e` inside the pinned
-fleet musl image. Run
-`cargo mutants --baseline run --gitignore true --jobs 2 --timeout 10 --build-timeout 60 --file src/config/mod.rs --re 'first_pass|second_pass' -- --test config`.
-Set the same filter to `scan_decimal|scan_octal|validate_v1` for the
-14-identity scope. Retry the two exact timeout identities at 30
-seconds and reconcile the outcomes by mutant identity.
+fleet musl image. Set `CARGO_INCREMENTAL=0` and
+`CARGO_BUILD_JOBS=1`. Run
+`cargo mutants --baseline run --gitignore true --jobs 1 --timeout 30 --build-timeout 60 --file src/config/mod.rs --re 'first_pass|second_pass|scan_decimal|scan_octal|validate_v1' --cargo-test-arg=--test --cargo-test-arg=config`.
+Reconcile the outcomes by mutant identity.
 
 With cargo-llvm-cov 0.9.1 and the pinned Rust llvm-tools component,
 the config, engine, publish and uevent suites passed 27 tests, with
@@ -100,6 +97,32 @@ the container denied the test's user-namespace creation. Full binary,
 lifecycle and live publication coverage still require their Linux
 verification environments.
 
+The [native x86-64 census](https://github.com/laputa-systems/mdevd-rs/actions/runs/44362505578)
+started with passing ordinary suites in all three shards. The results
+matched every selected identity.
+
+| Scope | Selected | Caught | Survived | Unviable | Timed out |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Config | 196 | 167 | 18 | 9 | 2 |
+| Engine | 154 | 127 | 23 | 3 | 1 |
+| Event intake and publication | 113 | 71 | 33 | 6 | 3 |
+
+The record tests now check that a bare field and a longer name cannot
+shadow the first matching variable, that a header-only record is empty,
+and that fatal intake and broken-pipe errors keep their diagnostics.
+Ten ordinary event and publication tests passed, with two live tests
+ignored. A native ARM64 comparison selected the same 20 exact
+identities and moved from 15 caught and five survivors to 20 caught.
+Parallel local trials had intermittent missing-object linker failures.
+The matched comparison ran serially with `CARGO_INCREMENTAL=0` and
+`CARGO_BUILD_JOBS=1`.
+
+Use Cargo-mutants 27.1.0 with the source paths
+`src/uevent/mod.rs` and `src/publish/mod.rs`, and select
+`errno_msg|Uevent::is_empty|Uevent::getvar|Display for Fatal`.
+Pass `--jobs 1 --timeout 10 --build-timeout 60 --cargo-test-arg=--test --cargo-test-arg=publish --cargo-test-arg=--test --cargo-test-arg=uevent`.
+Kernel-level and live consumer decisions retain their separate tests.
+
 ## Tickets
 
 
@@ -108,7 +131,7 @@ verification environments.
 
 - **Area:** deslop · tests
 - **Where:** test suites and CI
-- **Problem:** Native ARM64 parser mutation has seven survivors and one confirmed hang. Coverage, the remaining device and publication decisions, and whole-change retention are open.
+- **Problem:** The verified native x86-64 census has open survivors and timeouts in the config, engine and event I/O scopes. The narrower serial ARM64 parser rerun has 18 survivors and two timed-out identities. The whole-change retention gate and eligible native effect checks remain open.
 - **Recommendation:** Disposition the parser identities and qualify engine, lifecycle and publication checks with ordinary coverage and isolated native evidence. Accept a measured fail-closed whole-change lane before closing.
 - **Fix with:** deslop
 - **Effort:** M

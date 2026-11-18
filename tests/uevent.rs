@@ -1,6 +1,6 @@
 //! P2: uevent intake tests. `uevent` filter.
 use mdevd::config::UEVENT_MAX_VARS;
-use mdevd::uevent::{DataOutcome, Invalid, Stats, bind_intake, parse_record, read_datagram, read_event};
+use mdevd::uevent::{DataOutcome, Fatal, Invalid, Stats, bind_intake, parse_record, read_datagram, read_event};
 use mdevd::uevent::ReadOutcome;
 use std::os::unix::io::BorrowedFd;
 
@@ -34,7 +34,7 @@ fn uevent_header_never_matches() {
 
 #[test]
 fn uevent_duplicates_first_wins() {
-    let buf = record(&[b"add@/x", b"A=1", b"A=2"]);
+    let buf = record(&[b"add@/x", b"A", b"AB=other", b"A=1", b"A=2"]);
     let ev = parse_record(&buf).unwrap();
     assert_eq!(ev.getvar(b"A"), Some(b"1".as_slice()));
 }
@@ -45,13 +45,20 @@ fn uevent_rejects() {
     assert_eq!(parse_record(b"add@/x"), Err(Invalid::NotTerminated));
     assert_eq!(parse_record(b"no-header-here\0"), Err(Invalid::BadHeader));
     // "@/“ anywhere in the datagram satisfies the check, like strstr.
-    assert!(parse_record(b"junk@/tail\0").is_ok());
+    assert!(parse_record(b"junk@/tail\0").unwrap().is_empty());
     // 63 records are fine, the 64th is rejected.
     let mut many = vec![b"add@/x".as_slice()];
     many.extend(std::iter::repeat_n(b"V=1".as_slice(), UEVENT_MAX_VARS - 1));
     assert!(parse_record(&record(&many)).is_ok());
     many.push(b"V=2");
     assert_eq!(parse_record(&record(&many)), Err(Invalid::TooManyVars));
+}
+
+#[test]
+fn uevent_fatal_diagnostics_distinguish_truncation_and_read_error() {
+    assert_eq!(Fatal::Truncated.to_string(), "buffer too small for netlink message");
+    let error = std::io::Error::other("test read failure");
+    assert_eq!(Fatal::Read(error).to_string(), "read netlink message: test read failure");
 }
 
 #[test]
