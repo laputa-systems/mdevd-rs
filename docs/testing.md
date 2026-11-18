@@ -39,6 +39,18 @@ A FIFO handshake holds reload open while the kernel queues add events.
 It never writes host sysfs.
 
 Network events lack device major and minor numbers, so this test does not exercise daemon-driven device creation.
+
+`tools/check-udev-consumer.sh` builds the pinned libudev-zero fork and
+fetches the locked Cargo inputs before running the two offline tests in
+private user and network namespaces. The
+[native x86-64 run](https://github.com/laputa-systems/mdevd-rs/actions/runs/44375183367)
+exchanged a 99-byte group-4 message and verified add, change and remove
+events with device state through the compiled C consumer.
+
+The multicast log SHA-256 is
+`36018fff7d773766c7c835512867dd55703c6b5198dc353e5a0760af125bf273`.
+The consumer log SHA-256 is
+`d69d127fe5e0a7543e89ef36ad5e8676d36a23b2c4763ed99a0b97f593564975`.
 The device tests exercise the real filesystem adapter on private tmpfs instead.
 RealOps rejects symlink ancestors for mutations and retains the verified device inode for subsequent metadata changes.
 Its chmod implementation requires `/proc/self/fd` to update that inode without opening the device.
