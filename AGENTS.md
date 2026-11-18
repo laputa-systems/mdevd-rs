@@ -22,7 +22,7 @@ Musl release builds link with `mold` via `RUSTFLAGS="-Clinker=mold -Clinker-flav
 - Two hosted x86_64 Linux runs of `make test` each passed 67 cases with eight privileged cases ignored. Elapsed time was 4.65 s with a fresh Cargo target and 2.57 s warm. The hosted Clippy step took about one second on the warm tree. [Cost measurement](https://github.com/laputa-systems/mdevd-rs/pull/6)
 - `tests/bins.rs`, `tests/config.rs`, and `tests/parity.rs` exercise daemon and coldplug commands, configuration grammar, and golden behavior. `tests/engine.rs` covers policy decisions and adapter behavior.
 - `tests/publish.rs` and the framing tests under `src/publish/` cover processed event output. The combined guest harness separately checks the libudev-zero consumer and daemon shutdown with real Linux events.
-- The ordinary suite checks sealed filesystem and lifecycle cases. Real device-node mutations and event origination have separate capability-isolated checks described in [Verification](docs/testing.md).
+- The ordinary suite checks sealed filesystem and lifecycle cases. It also runs the publication wrapper regression with local command stubs and ripgrep. The real consumer exchange and device checks run separately; see [Verification](docs/testing.md).
 - The musl and QEMU smoke jobs exercise the built binaries. Boot and real kernel behavior require the separate Linux KVM guest harness.
 - `tools/measure-perf.sh` runs the workloads described in [Performance](docs/perf.md). Use the declared workload when changing discovery, matching, or event publication.
 - `tests/fixtures/pins.txt` records the upstream reference and fixture provenance.
