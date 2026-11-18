@@ -345,7 +345,11 @@ enum State {
 
 fn main() {
     force_c_locale();
-    let argv: Vec<String> = std::env::args().skip(1).collect();
+    let argv = std::env::args_os()
+        .skip(1)
+        .map(std::ffi::OsString::into_string)
+        .collect::<Result<Vec<_>, _>>()
+        .unwrap_or_else(|_| usage());
     let a = parse_args(&argv).unwrap_or_else(|_| usage());
     if a.firmware_flag {
         fatal(100, "firmware loading is unsupported in this build (-F rejected)".to_string());

@@ -6,6 +6,7 @@
 //! HUP-retain and sync-timeout are registered divergences from the
 //! upstream behavior documented in docs/divergence.md.
 use std::io::Read;
+use std::os::unix::ffi::OsStringExt;
 use std::os::unix::io::FromRawFd;
 use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
@@ -74,6 +75,24 @@ fn sysdir() -> PathBuf {
     let d = Path::new(env!("CARGO_MANIFEST_DIR")).join(".work/tmp/bins-sys");
     std::fs::create_dir_all(&d).unwrap();
     d
+}
+
+#[test]
+fn bins_cli_rejects_non_utf8_arguments() {
+    let sys = sysdir();
+    let dev = devdir();
+    for name in ["mdevd", "mdevd-coldplug"] {
+        let mut cmd = Command::new(bin(name));
+        cmd.arg("-s").arg(&sys);
+        if name == "mdevd" {
+            cmd.args(["-N", "-d"]).arg(&dev).args(["-f", "/nonexistent-mdev-conf-xyz"]);
+        }
+        cmd.arg(std::ffi::OsString::from_vec(vec![0xff]));
+        let done = run_timeout(cmd, 10);
+        assert_eq!(done.code, Some(100), "{name}: {:?}", String::from_utf8_lossy(&done.stderr));
+        assert!(String::from_utf8_lossy(&done.stderr).contains("usage:"), "{name}");
+        assert!(done.stdout.is_empty(), "{name}");
+    }
 }
 
 /// Coldplug with an alternate sysfs root must never open the host's real

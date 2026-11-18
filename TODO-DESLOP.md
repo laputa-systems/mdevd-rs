@@ -170,6 +170,14 @@ numeric-device combinations. Every numeric action had a numeric
 device after the row's initializers. The six mutations of the
 non-numeric guard mask therefore preserve behavior with this table.
 
+
+Both command entry points now decode OS arguments before option parsing.
+Invalid UTF-8 follows the existing usage path and exits 100 before daemon
+or coldplug effects. The native ARM64 regression exercised both binaries
+and checked the exit, stderr usage and empty stdout. The daemon baseline
+returned 101 before the change. The ordinary CLI and binary parser cases
+and Clippy passed in the same Alpine builder.
+
 ## Tickets
 
 
@@ -191,13 +199,3 @@ non-numeric guard mask therefore preserve behavior with this table.
 - **Recommendation:** Run the deslop Dead code step. Accept: tools clean or allowlisted with reasons; walk-backs filed as Needs owner tickets.
 - **Fix with:** deslop
 - **Effort:** M
-
-
-### DSLP-6 · P3 · Reject non-UTF-8 CLI arguments with the usage exit
-
-- **Area:** command-line argument admission
-- **Where:** src/bin/mdevd.rs; src/bin/mdevd-coldplug.rs; tests/bins.rs
-- **Problem:** Both binaries panic with exit 101 when given an OS argument containing byte FF. Their existing invalid-argument contract uses exit 100. Reproduced in an isolated ARM64 musl container before any daemon effect.
-- **Recommendation:** Read OS arguments and reject malformed UTF-8 at admission with exit 100. Test both built binaries with a byte-valued argument.
-- **Fix with:** error-model
-- **Effort:** S
