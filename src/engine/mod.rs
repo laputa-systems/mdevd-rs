@@ -282,12 +282,10 @@ fn apply_rule(
     };
     let node_s = lossy(&node).into_owned();
     let dev_s = lossy(&dev.devname).into_owned();
-    let has_mm = dev.maj.is_some() && dev.min.is_some();
-    let is_add = dev.action == Action::Add && has_mm && !matches!(rule.move_kind, MoveKind::NoCreate);
-    let is_remove =
-        dev.action == Action::Remove && has_mm && !matches!(rule.move_kind, MoveKind::NoCreate);
+    let numbers = dev.maj.zip(dev.min);
+    let change_node = rule.move_kind != MoveKind::NoCreate;
 
-    if is_add {
+    if let (Action::Add, true, Some((maj, min))) = (dev.action, change_node, numbers) {
         if node.contains(&b'/') {
             if run.is_dry() {
                 for p in mkdir_prefixes(&node) {
@@ -298,7 +296,6 @@ fn apply_rule(
                 return Ok(Step::Stop);
             }
         }
-        let (maj, min) = (dev.maj.unwrap(), dev.min.unwrap());
         let kind_c = match dev.kind {
             NodeKind::Block => "b",
             NodeKind::Char => "c",
@@ -358,7 +355,7 @@ fn apply_rule(
         }
     }
 
-    if is_remove {
+    if dev.action == Action::Remove && change_node && numbers.is_some() {
         // Unreachable through on_event (remove never carries maj/min), kept
         // for fidelity and covered by direct unit tests.
         if matches!(rule.move_kind, MoveKind::MoveAndLink) {
