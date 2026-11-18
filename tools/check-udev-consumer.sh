@@ -36,7 +36,7 @@ export CONSUMER_OUT="$ROOT/.work/tmp/consumer.out"
 rm -f "$CONSUMER_OUT"
 
 echo "--- Rust multicast self-exchange under unshare:"
-unshare -U -n -r cargo test --locked -q --test publish publish_live_multicast -- --exact --nocapture > "$ROOT/.work/tmp/live-mcast.log" 2>&1
+unshare -U -n -r cargo test --locked -q --test publish publish_live_multicast -- --exact --ignored --nocapture > "$ROOT/.work/tmp/live-mcast.log" 2>&1
 cat "$ROOT/.work/tmp/live-mcast.log"
 rg -q "live-multicast: exchanged" "$ROOT/.work/tmp/live-mcast.log" || {
   echo "check-udev-consumer: live multicast did not run" >&2
@@ -44,7 +44,7 @@ rg -q "live-multicast: exchanged" "$ROOT/.work/tmp/live-mcast.log" || {
 }
 
 echo "--- C consumer exchange under unshare:"
-unshare -U -n -r cargo test --locked -q --test publish publish_live_consumer -- --exact --nocapture > "$ROOT/.work/tmp/live-consumer.log" 2>&1
+unshare -U -n -r cargo test --locked -q --test publish publish_live_consumer -- --exact --ignored --nocapture > "$ROOT/.work/tmp/live-consumer.log" 2>&1
 cat "$ROOT/.work/tmp/live-consumer.log"
 rg -q "live-consumer: verified" "$ROOT/.work/tmp/live-consumer.log" || {
   echo "check-udev-consumer: live consumer exchange did not verify" >&2
