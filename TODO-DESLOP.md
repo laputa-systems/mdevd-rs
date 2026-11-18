@@ -123,6 +123,14 @@ Use Cargo-mutants 27.1.0 with the source paths
 Pass `--jobs 1 --timeout 10 --build-timeout 60 --cargo-test-arg=--test --cargo-test-arg=publish --cargo-test-arg=--test --cargo-test-arg=uevent`.
 Kernel-level and live consumer decisions retain their separate tests.
 
+The engine now exercises the longest accepted literal node path and the
+longest accepted path after appending a device name. Both cases check
+rejection of the next byte without creating a node. The 12 engine tests
+passed. Serial cargo-mutants 27.1.0 on the pinned ARM64 musl builder selected
+the same 14 `node_for` and path-limit identities at base `1570f52` and
+with the fixture. The original suite caught seven and missed seven. The
+fixture caught all 14. The live node and consumer effects remain open.
+
 ## Tickets
 
 

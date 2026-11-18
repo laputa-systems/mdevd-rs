@@ -7,7 +7,7 @@ use mdevd::config::parse;
 use mdevd::engine::fake::{FakeOps, NullOps};
 use mdevd::engine::ops::{MknodOut, Ops};
 use mdevd::engine::{
-    Action, Caps, Device, Out, Outcome, Request, Run, alias_format, match_rule, node_for, on_event,
+    Action, Caps, Device, NodeFail, Out, Outcome, Request, Run, alias_format, match_rule, node_for, on_event,
 };
 use mdevd::uevent::Uevent;
 
@@ -58,6 +58,24 @@ fn engine_alias_units() {
     // Bounds mirror the C outmax accounting (NUL counted).
     assert!(alias_format(4, b"abc", b"sda", &caps).is_ok());
     assert!(alias_format(3, b"abc", b"sda", &caps).is_err());
+}
+
+#[test]
+fn engine_node_path_boundaries() {
+    let caps = [None; 10];
+    let directory = cfg_of(".* root:root 660 >disk/\n");
+    let leaf = vec![b'x'; 4085];
+    let node = node_for(&directory, &directory.rules[0], &leaf[..4084], &caps).unwrap();
+    assert_eq!(node.len(), 4089);
+    assert_eq!(&node[..5], b"disk/");
+    assert_eq!(&node[5..], &leaf[..4084]);
+    assert_eq!(node_for(&directory, &directory.rules[0], &leaf, &caps), Err(NodeFail::TooLong));
+
+    let last_path = "x".repeat(4090);
+    let literal = cfg_of(&format!(".* root:root 660 >{last_path}\n"));
+    assert_eq!(node_for(&literal, &literal.rules[0], b"x", &caps).unwrap(), last_path.as_bytes());
+    let over_limit = cfg_of(&format!(".* root:root 660 >{last_path}x\n"));
+    assert_eq!(node_for(&over_limit, &over_limit.rules[0], b"x", &caps), Err(NodeFail::TooLong));
 }
 
 #[test]
