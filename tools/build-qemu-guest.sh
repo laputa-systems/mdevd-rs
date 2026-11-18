@@ -38,9 +38,13 @@ done < guest/packages.sha256
 if [ -z "$APKS" ]; then echo 'empty guest package lock' >&2; exit 1; fi
 (cd .work/dl/apk && sha256sum -c "$OLDPWD/guest/packages.sha256")
 apk --keys-dir "$ROOT/etc/apk/keys" verify $APKS
+set --
+if [ "$(id -u)" -ne 0 ]; then
+  set -- --usermode
+fi
 # shellcheck disable=SC2086
 apk --root "$ROOT" --repositories-file /dev/null --no-network --keys-dir "$ROOT/etc/apk/keys" \
-  --initdb --arch x86_64 --usermode add $APKS
+  --initdb --arch x86_64 "$@" add $APKS
 echo GUEST_PACKAGES_VERIFIED
 echo 'building mdevd (musl static)'
 cargo build --locked --release --target x86_64-unknown-linux-musl
