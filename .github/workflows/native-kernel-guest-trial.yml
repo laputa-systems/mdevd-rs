@@ -1,0 +1,42 @@
+name: Native kernel guest trial
+
+on: pull_request
+
+permissions:
+  contents: read
+
+jobs:
+  qemu:
+    name: Kernel event and coldplug in KVM
+    runs-on: ubuntu-26.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - name: Verify native KVM is available
+        run: |
+          test "$(uname -m)" = x86_64
+          test -c /dev/kvm
+      - name: Run the existing guest harness
+        run: |
+          docker run --rm --platform linux/amd64 \
+            --device /dev/kvm \
+            --volume "$PWD:/work" --workdir /work \
+            --env CARGO_BUILD_JOBS=2 \
+            --env 'RUSTFLAGS=-Clinker=mold -Clinker-flavor=ld' \
+            --entrypoint /bin/sh \
+            ghcr.io/joshuarli/musl-toolchain@sha256:80f0ffb39c786eb6242b7b0345ddce3c6106c687c401d1fc0ea2ca69cf61c314 -ec '
+              git config --global --add safe.directory /work
+              apk add --no-cache e2fsprogs=1.47.4-r0 qemu-system-x86_64=11.0.3-r0
+              qemu-system-x86_64 --version
+              sh tools/check-qemu.sh
+            '
+      - uses: actions/upload-artifact@cf430e030dd5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ always() }}
+        with:
+          name: native-kernel-guest-logs
+          path: |
+            .work/qemu-mdevd-console.log
+            .work/qemu-mdevd.log
