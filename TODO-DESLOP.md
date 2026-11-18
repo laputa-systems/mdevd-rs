@@ -136,8 +136,13 @@ passed for the same daemon and coldplug sources. The guest kernel's
 actual block device add produced the expected node identity, mode and
 framed record. Coldplug sync and graceful daemon shutdown also passed.
 The build harness now stops on failed preparation and supports the
-disposable builder's container root. The separate libudev-zero consumer
-and hardware coldplug checks remain open.
+disposable builder's container root.
+
+The [native consumer run](https://github.com/laputa-systems/mdevd-rs/actions/runs/44375183367)
+passed the group-4 multicast round trip and the pinned libudev-zero
+consumer's add, change and remove sequence with observed device state.
+The harness fetches the locked Cargo inputs before entering the private
+network namespace. Direct hardware coldplug remains open.
 
 ## Tickets
 
