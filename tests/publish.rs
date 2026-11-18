@@ -1,10 +1,3 @@
-//! P4: publication tests. `publish` filter.
-//!
-//! `publish_live_multicast` runs for real under a capable netns and
-//! skip-notes otherwise; `tools/check-udev-consumer.sh` runs it under
-//! `unshare` and requires the exchange marker. `publish_live_consumer`
-//! needs `CONSUMER_BIN`/`CONSUMER_OUT` (set by that script) and never
-//! passes silently.
 use mdevd::publish::{Note, Output, Rebroadcast, Sinks, apply_loop_guard, publish};
 use std::os::unix::io::{AsRawFd, FromRawFd, OwnedFd};
 
@@ -89,22 +82,6 @@ fn publish_loop_guard() {
     assert_eq!(apply_loop_guard(1, 0), (0, None));
 }
 
-#[test]
-fn publish_rebroadcast_socket() {
-    let r = match Rebroadcast::connect(4, 1024 * 1024) {
-        Ok(r) => r,
-        Err(e) => {
-            println!("note: rebroadcast connect blocked ({e}); socket test skipped");
-            return;
-        }
-    };
-    let mut notes = Vec::new();
-    // No listener here; the send may still succeed into the void. Either
-    // way the call itself must not misbehave at the API level.
-    r.send(b"add@/x\x00ACTION=add\x00", &mut notes);
-    let _ = notes;
-}
-
 fn bind_group4() -> Result<OwnedFd, std::io::Error> {
     // SAFETY: straightforward netlink bind; errors return errno.
     unsafe {
@@ -131,28 +108,14 @@ fn bind_group4() -> Result<OwnedFd, std::io::Error> {
 }
 
 #[test]
+#[ignore = "requires the isolated netlink fixture from check-udev-consumer.sh"]
 fn publish_live_multicast() {
-    let rx = match bind_group4() {
-        Ok(fd) => fd,
-        Err(e) => {
-            println!("note: netlink bind unavailable ({e}); live multicast skipped");
-            return;
-        }
-    };
-    let tx = match Rebroadcast::connect(4, 1024 * 1024) {
-        Ok(tx) => tx,
-        Err(e) => {
-            println!("note: rebroadcast connect blocked ({e}); live multicast skipped");
-            return;
-        }
-    };
+    let rx = bind_group4().expect("bind isolated multicast receiver");
+    let tx = Rebroadcast::connect(4, 1024 * 1024).expect("connect isolated multicast sender");
     let rec = record("add", 7);
     let mut notes = Vec::new();
     tx.send(&rec, &mut notes);
-    if !notes.is_empty() {
-        println!("note: multicast send blocked ({}); live multicast skipped", notes[0].msg);
-        return;
-    }
+    assert!(notes.is_empty(), "isolated multicast send failed: {notes:?}");
     // SAFETY: rx is a bound netlink fd; buf has capacity.
     let mut buf = vec![0u8; 8192];
     let r = unsafe { libc::recv(rx.as_raw_fd(), buf.as_mut_ptr() as *mut _, buf.len(), 0) };
@@ -163,18 +126,11 @@ fn publish_live_multicast() {
 }
 
 #[test]
+#[ignore = "requires the pinned consumer fixture from check-udev-consumer.sh"]
 fn publish_live_consumer() {
-    let (bin, out) = match (std::env::var("CONSUMER_BIN"), std::env::var("CONSUMER_OUT")) {
-        (Ok(bin), Ok(out)) => (bin, out),
-        _ => {
-            println!("note: CONSUMER_BIN/OUT unset; live consumer skipped (see check-udev-consumer.sh)");
-            return;
-        }
-    };
-    let tx = match Rebroadcast::connect(4, 1024 * 1024) {
-        Ok(tx) => tx,
-        Err(e) => panic!("rebroadcast connect blocked ({e}); run under unshare -U -n -r"),
-    };
+    let bin = std::env::var("CONSUMER_BIN").expect("check-udev-consumer.sh sets CONSUMER_BIN");
+    let out = std::env::var("CONSUMER_OUT").expect("check-udev-consumer.sh sets CONSUMER_OUT");
+    let tx = Rebroadcast::connect(4, 1024 * 1024).expect("connect isolated multicast sender");
     let log = std::fs::File::create(&out).expect("consumer log");
     let mut child = std::process::Command::new(&bin)
         .stdout(log)

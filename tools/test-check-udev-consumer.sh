@@ -17,7 +17,11 @@ exit 0
 STUB
 cat > "$scratch/bin/unshare" <<'STUB'
 #!/bin/sh
-printf '%s\n' 'live-multicast: exchanged' 'live-consumer: verified'
+case " $* " in
+  *" publish_live_multicast -- --exact --ignored --nocapture "*) printf '%s\n' 'live-multicast: exchanged' ;;
+  *" publish_live_consumer -- --exact --ignored --nocapture "*) printf '%s\n' 'live-consumer: verified' ;;
+  *) exit 64 ;;
+esac
 exit "${TEST_CARGO_STATUS:?}"
 STUB
 chmod +x "$scratch/bin/"*

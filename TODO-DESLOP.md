@@ -7,6 +7,17 @@ Deslop campaign backlog ([plan](https://github.com/laputa-systems/stuff/blob/mai
 
 Ground (DSLP-1) passed at base `566b650c1676d83714bed9108c9d0d3f3290d38f`. Both hosted Linux runs passed 67 tests with eight separately enabled privileged cases ignored. [Verification](AGENTS.md#verification) lists the test costs, contracts, and guest checks.
 
+Publication test admission at `425ed764d9b92c55e652326e592e4293a57fbf03`
+found three tests counted by ordinary Cargo even if they performed no
+exchange. The consumer test returned success without its fixture variables,
+and the multicast test returned success on bind, connect or send failure.
+The standalone socket test accepted both send outcomes without checking either.
+The two exchange tests now report as ignored by default and require their
+fixtures when selected. The wrapper checks the exchange markers and propagates
+runner errors. The unasserted socket smoke was removed. The shell fixture
+checks exact opt-in selection and failure propagation without opening netlink.
+The real Linux namespace exchange remains a separate verification boundary.
+
 ## Tickets
 
 ### DSLP-2 · P2 · Diagnose: ultrareview into this backlog
