@@ -24,19 +24,35 @@ jobs:
           docker run --rm --platform linux/amd64 \
             --device /dev/kvm \
             --volume "$PWD:/work" --workdir /work \
+            --env "BUILDER_UID=$(id -u)" --env "BUILDER_GID=$(id -g)" \
             --env CARGO_BUILD_JOBS=2 \
             --env 'RUSTFLAGS=-Clinker=mold -Clinker-flavor=ld' \
             --entrypoint /bin/sh \
             ghcr.io/joshuarli/musl-toolchain@sha256:80f0ffb39c786eb6242b7b0345ddce3c6106c687c401d1fc0ea2ca69cf61c314 -ec '
-              git config --global --add safe.directory /work
               apk add --no-cache e2fsprogs=1.47.4-r0 qemu-system-x86_64=11.0.3-r0
               qemu-system-x86_64 --version
-              sh tools/check-qemu.sh
+              addgroup -g "$BUILDER_GID" builder
+              adduser -D -u "$BUILDER_UID" -G builder builder
+              kvm_gid=$(stat -c %g /dev/kvm)
+              kvm_group=$(awk -F: -v gid="$kvm_gid" "\$3 == gid {print \$1; exit}" /etc/group)
+              if [ -z "$kvm_group" ]; then
+                addgroup -g "$kvm_gid" kvm
+                kvm_group=kvm
+              fi
+              addgroup builder "$kvm_group"
+              mv /root/.cargo /root/.rustup /home/builder/
+              chown -R builder:builder /home/builder
+              su -s /bin/sh builder -c "
+                export CARGO_HOME=/home/builder/.cargo RUSTUP_HOME=/home/builder/.rustup
+                export PATH=\$CARGO_HOME/bin:\$PATH
+                sh tools/check-qemu.sh
+              "
             '
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ always() }}
         with:
           name: native-kernel-guest-logs
           path: |
+            .work/qemu-mdevd-prepare.log
             .work/qemu-mdevd-console.log
             .work/qemu-mdevd.log
