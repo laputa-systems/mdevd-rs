@@ -151,6 +151,25 @@ the debug assertion. The native ARM64 config tests passed, including
 every checked-in grammar corpus result. The ordinary hosted suite
 exercises the namespace-dependent parity cases.
 
+Single-byte move and hook tokens now exercise capture at the first
+state exit. A malformed second rule also checks that the column is
+relative to its source line. All nine config cases passed on native
+ARM64. Serial cargo-mutants 27.1.0 selected the same eight identities
+at `4921c11` and with the tests, using `--test config` and the
+`src/config/mod.rs:(357|363|546):` expression. The result moved from
+three caught and five surviving to six caught and two equivalent,
+with zero build errors or timeouts.
+
+The two surviving `&&` to `||` replacements capture a token's saved
+offset earlier. All 11 `A_PATH` and 15 `A_CMD` actions enter their
+matching token state without `A_FINAL`. Same-state transitions carry
+neither capture nor finalization flags. The rule reads the saved fields
+only at `A_FINAL`, so both versions emit the same offsets. Separately,
+walking the table from state zero covered 42 parser-state and
+numeric-device combinations. Every numeric action had a numeric
+device after the row's initializers. The six mutations of the
+non-numeric guard mask therefore preserve behavior with this table.
+
 ## Tickets
 
 

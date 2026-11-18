@@ -3,7 +3,7 @@
 //! Hermetic tests always run. `config_corpus_dump_matches_goldens`
 //! pins every corpus file to its committed rule dump or error text.
 use mdevd::config::regex::{Regex, lossy, pin_c_locale};
-use mdevd::config::{Config, DevMatch, MoveKind, parse, validate_v1};
+use mdevd::config::{Config, ConfigError, DevMatch, MoveKind, parse, validate_v1};
 
 fn parse_ok(name: &str) -> Config {
     pin_c_locale();
@@ -155,6 +155,30 @@ fn config_bad_fixture_errors() {
     let input = std::fs::read("tests/fixtures/bad-mdev.conf").unwrap();
     let err = parse(&input).unwrap_err();
     assert_eq!(err.to_string(), "syntax error during first pass: line 3 column 2");
+}
+
+#[test]
+fn config_retains_single_byte_move_and_hook_tokens() {
+    pin_c_locale();
+    let config = parse(b"x root:root 660 >y @z\n").unwrap();
+    let rule = &config.rules[0];
+    assert_eq!(config.at(rule.movepath.unwrap()), b"y");
+    assert_eq!(config.at(rule.cmd.unwrap()), b"z");
+    assert!(matches!(
+        validate_v1(&config),
+        Err(ConfigError::HooksUnsupported { line: 1 })
+    ));
+}
+
+#[test]
+fn config_reports_second_pass_errors_relative_to_their_line() {
+    pin_c_locale();
+    let mut input = b"# preceding line\n".to_vec();
+    input.extend_from_slice(include_bytes!("corpus/c-bad-mode8.conf"));
+    assert!(matches!(
+        parse(&input),
+        Err(ConfigError::SecondPass { line: 2, col: 17 })
+    ));
 }
 
 #[test]
