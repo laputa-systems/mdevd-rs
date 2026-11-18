@@ -1,0 +1,30 @@
+name: mdevd native coverage trial
+
+on: pull_request
+
+permissions:
+  contents: read
+
+jobs:
+  coverage:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: taiki-e/install-action@4a76afe23f9e08d2d9550fb56e556444e8611d21
+        with:
+          tool: cargo-llvm-cov@0.9.1
+      - name: Prepare the native Linux host
+        run: |
+          set -euo pipefail
+          rustup component add llvm-tools
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          unshare -U -n -r true
+      - name: Measure the ordinary Rust suites
+        run: |
+          set -euo pipefail
+          make coverage
+          test -s .work/coverage/report.json
+          cargo llvm-cov report --branch --summary-only
