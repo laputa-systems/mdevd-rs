@@ -1,5 +1,5 @@
 Prefix: DSLP
-Next: 6
+Next: 7
 
 Deslop campaign backlog ([plan](https://github.com/laputa-systems/stuff/blob/main/docs/campaigns/deslop.md), tier A). One agent works this file with the `deslop` skill: take the lowest-numbered open ticket whose area does not start with `Needs owner ·`. After DSLP-5, work the open P1 and P2 findings, then fill in `## Report` below.
 
@@ -25,16 +25,22 @@ selection without `--ignored` and propagates a failed test status.
 The existing CI provisioning already supplies ripgrep. The fixture
 uses local command stubs and leaves the live namespace checks separate.
 
+Diagnose at `37a4d96f4bc2efa004bcda2d0c7ff5cd11d58737` ranks the
+configuration parser and ordered device decisions first for mutation.
+Their fixtures cover corpus parity and planned effects. Native lifecycle,
+node creation and rebroadcast have separate verification commands in
+[Local verification](docs/testing.md). Their acceptance requires the
+real Linux effects alongside the ordinary tests.
+
+Both Linux binaries collect their OS arguments as UTF-8 before calling
+the usage parser. A byte outside UTF-8 gives both commands exit 101 and
+a Rust panic instead of the ordinary usage exit 100. This reproduced
+with the locked ARM64 musl debug binaries in the stable Alpine container.
+The commands need no device mount, capabilities or networking to
+reproduce the panic.
+
 ## Tickets
 
-### DSLP-2 · P2 · Diagnose: ultrareview into this backlog
-
-- **Area:** deslop · diagnose
-- **Where:** whole repository
-- **Problem:** No review has ranked this repository's risks for the deslop pass.
-- **Recommendation:** Run the deslop Diagnose step. Accept: the diff touches only docs, comments, and this file, and every finding names its Fix with.
-- **Fix with:** deslop
-- **Effort:** S
 
 ### DSLP-3 · P2 · Types: strict profile and typing findings
 
@@ -63,3 +69,12 @@ uses local command stubs and leaves the live namespace checks separate.
 - **Fix with:** deslop
 - **Effort:** M
 
+
+### DSLP-6 · P3 · Reject non-UTF-8 CLI arguments with the usage exit
+
+- **Area:** command-line argument admission
+- **Where:** src/bin/mdevd.rs; src/bin/mdevd-coldplug.rs; tests/bins.rs
+- **Problem:** Both binaries panic with exit 101 when given an OS argument containing byte FF. Their existing invalid-argument contract uses exit 100. Reproduced in an isolated ARM64 musl container before any daemon effect.
+- **Recommendation:** Read OS arguments and reject malformed UTF-8 at admission with exit 100. Test both built binaries with a byte-valued argument.
+- **Fix with:** error-model
+- **Effort:** S
