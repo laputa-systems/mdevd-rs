@@ -39,17 +39,30 @@ with the locked ARM64 musl debug binaries in the stable Alpine container.
 The commands need no device mount, capabilities or networking to
 reproduce the panic.
 
+Types measured the production library and both binaries with the pinned
+nightly on ARM64 musl. Counts are unique source locations.
+
+| Candidate | Before | After | Disposition |
+| --- | ---: | ---: | --- |
+| `unsafe_code` | 52 | 52 | Keep the required Linux and libc FFI |
+| `cast_possible_truncation` | 13 | 13 | Keep bounded and platform ABI conversions |
+| `cast_sign_loss` | 3 | 3 | Keep conversions guarded by sign checks |
+| `expect_used` | 2 | 2 | The configuration accessor and regex clone rely on parser invariants |
+| `unwrap_used` | 4 | 3 | Bind the device numbers through their options. The remaining sites construct NUL-free strings |
+| `needless_pass_by_value` | 8 | 8 | Preserve descriptor ownership and existing diagnostic signatures |
+| `wildcard_enum_match_arm` | 2 | 2 | Retain equivalent error handling for the grouped variants |
+| `match_wildcard_for_single_variants`, `redundant_clone` | 0 | 0 | No witness for adoption |
+
+The add branch now receives both numbers from a single option pattern.
+The 11 engine tests passed in the pinned Alpine 3.24.2 ARM64 container.
+Forcing the node-change flag off failed `engine_dry_basic` on the
+missing mknod and chmod transcript. Restoring the condition restored
+the pass. The release engine storm held RSS at 568 kB and file
+descriptors at four across the measured 10,000 events.
+
 ## Tickets
 
 
-### DSLP-3 · P2 · Types: strict profile and typing findings
-
-- **Area:** deslop · types
-- **Where:** type checker and lint configuration; Rust/Python sources
-- **Problem:** The strict-profile candidates in the deslop skill's tools reference have not been measured here.
-- **Recommendation:** Run the deslop Types step. Accept: clean at the adopted profile, escape hatches not increased, witnesses recorded.
-- **Fix with:** deslop
-- **Effort:** M
 
 ### DSLP-4 · P2 · Tests: coverage, boundary gaps, mutation
 
