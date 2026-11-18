@@ -24,7 +24,9 @@ jobs:
           tools/check-pins.sh
           tools/check-deps.sh
       - name: test
-        run: make test
+        run: time -p make test
+      - name: Repeat native tests
+        run: time -p make test
       - name: clippy
         run: cargo clippy --locked -q --all-targets
       - name: release x86_64 musl
