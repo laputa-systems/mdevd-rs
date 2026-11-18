@@ -8,7 +8,12 @@
 | `tools/check-udev-consumer.sh` | Isolated netlink multicast and the pinned libudev-zero consumer. Both tests require explicit selection and fail if their prerequisites are missing. |
 | `tools/check-qemu.sh` | Real kernel `add` with major/minor drives node creation, framed `-o` output, and coldplug sync in a KVM guest |
 | `cargo test --locked -q --test engine --test bins --test parity --test config` | Engine behavior, daemon lifecycle, corpus goldens, and CLI contract |
+| `make coverage` | Branch coverage for the ordinary Rust suites, written to `.work/coverage/report.json` |
 | `cargo clippy --locked -q --all-targets` | Rust lint checks |
+
+Coverage uses cargo-llvm-cov 0.9.1 and the pinned Rust toolchain's
+`llvm-tools` component. Run it on a Linux host that permits the
+ordinary tests to create their own user and network namespaces.
 
 `tools/check-privileged.sh` requires Linux x86_64, the pinned Rust toolchain,
 Docker access, a local `ubuntu:24.04` image, BusyBox at `/bin/busybox`,
