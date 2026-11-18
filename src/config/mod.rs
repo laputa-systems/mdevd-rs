@@ -258,11 +258,11 @@ const ST_END: u32 = 0x1e;
 const ST_INPATH: u32 = 26;
 const ST_INCMD: u32 = 29;
 
-fn first_pass(buf: &[u8]) -> Result<(usize, usize), ConfigError> {
+fn first_pass(buf: &[u8]) -> Result<usize, ConfigError> {
     let mut i = 0usize;
     let mut col0 = 0usize;
     let mut line: u32 = 1;
-    let (mut n, mut m) = (0usize, 0usize);
+    let mut rules = 0usize;
     let mut state: u8 = 0;
     while state < 5 {
         if i >= buf.len() {
@@ -270,11 +270,8 @@ fn first_pass(buf: &[u8]) -> Result<(usize, usize), ConfigError> {
         }
         let what = FIRSTPASS_TABLE[state as usize][fp_class(buf[i])];
         state = what & 0x07;
-        if what & 0x10 != 0 {
-            m += 1;
-        }
         if what & 0x20 != 0 {
-            n += 1;
+            rules += 1;
         }
         if what & 0x40 != 0 {
             line += 1;
@@ -288,7 +285,7 @@ fn first_pass(buf: &[u8]) -> Result<(usize, usize), ConfigError> {
             col: (i - col0) as u32,
         });
     }
-    Ok((n, m))
+    Ok(rules)
 }
 
 #[derive(Debug)]
@@ -562,9 +559,9 @@ pub fn parse(input: &[u8]) -> Result<Config, ConfigError> {
     let mut buf = Vec::with_capacity(input.len() + 1);
     buf.extend_from_slice(input);
     buf.push(0);
-    let (n, _) = first_pass(&buf)?;
+    let rule_limit = first_pass(&buf)?;
     let (mut rules, _) = second_pass(&mut buf)?;
-    debug_assert!(rules.len() <= n + 1);
+    debug_assert!(rules.len() <= rule_limit + 1);
     // Mirrors main: the catchall sorts last and matches anything unmatched.
     rules.push(Rule {
         env: Vec::new(),
