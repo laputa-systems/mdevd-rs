@@ -502,6 +502,10 @@ fn gather_device(
             }
         }
     };
+    if devname.is_empty() {
+        run.warn(1, "device name is empty".into());
+        return None;
+    }
     if devname.len() >= PATH_MAX - 1 {
         run.warn(1, format!("device name too long: {}", lossy(&devname)));
         return None;

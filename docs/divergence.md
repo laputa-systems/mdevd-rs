@@ -134,6 +134,14 @@ Rust ends the `DEVNAME=` value at end of input instead.
 
 Proof: `engine_sysfs_fallbacks`.
 
+## Empty device names skip node operations
+
+An explicit empty device name in the event or sysfs produces a warning.
+The engine still publishes the event. It uses the device-path basename
+when both sources omit the name.
+
+Proof: `engine_distinguishes_an_empty_sysfs_name_from_an_absent_one`.
+
 ## Uevent framing validated without overruns
 
 Upstream classifies empty, unterminated, headerless, and oversized

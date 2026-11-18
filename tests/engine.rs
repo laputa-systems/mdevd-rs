@@ -270,6 +270,25 @@ fn engine_uses_complete_device_numbers_from_one_source() {
 }
 
 #[test]
+fn engine_distinguishes_an_empty_sysfs_name_from_an_absent_one() {
+    let event = read_evt("no-devname-z.evt");
+    let empty_event = uevent_of(&["ACTION=add", "DEVPATH=/devices/z", "DEVNAME="]);
+    for (input, metadata, expected) in [
+        (&event, b"\nDEVNAME=".as_slice(), &["warn: device name is empty"][..]),
+        (&event, b"\n".as_slice(), &["dry run: mknod z c 1 5", "dry run: chmod 600 z"][..]),
+        (&empty_event, b"\nDEVNAME=z\n".as_slice(), &["warn: device name is empty"][..]),
+    ] {
+        let (outcome, trace) = dry_run(
+            "z root:root 600\n",
+            input,
+            vec![(b"devices/z/dev", b"1:5\n"), (b"devices/z/uevent", metadata)],
+        );
+        assert_eq!(outcome, Outcome::Publish);
+        assert_eq!(trace, expected);
+    }
+}
+
+#[test]
 fn engine_warns_when_the_reported_device_name_reaches_its_limit() {
     let max = mdevd::engine::PATH_MAX;
     for length in [max - 2, max - 1] {
