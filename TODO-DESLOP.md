@@ -144,6 +144,13 @@ consumer's add, change and remove sequence with observed device state.
 The harness fetches the locked Cargo inputs before entering the private
 network namespace. Direct hardware coldplug remains open.
 
+Four first-pass census survivors changed only the parser's discarded
+second counter. The sole caller has discarded it since the initial
+port at `cb2c927`. Removing that count preserves the rule bound used by
+the debug assertion. The native ARM64 config tests passed, including
+every checked-in grammar corpus result. The ordinary hosted suite
+exercises the namespace-dependent parity cases.
+
 ## Tickets
 
 
