@@ -56,4 +56,5 @@ jobs:
             .work/selection/identities.json
             .work/census/mutants.out/outcomes.json
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 7
