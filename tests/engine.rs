@@ -240,10 +240,46 @@ fn engine_sysfs_fallbacks() {
     let (o, t) = dry_run(
         "fromuevent root:root 600\n",
         &read_evt("no-devname-z.evt"),
-        vec![(b"devices/z/uevent".as_slice(), b"ACTION=add\nDEVNAME=fromuevent".as_slice())],
+        vec![
+            (b"devices/z/dev".as_slice(), b"1:5\n".as_slice()),
+            (b"devices/z/uevent".as_slice(), b"ACTION=add\nDEVNAME=fromuevent".as_slice()),
+        ],
     );
     assert_eq!(o, Outcome::Publish);
-    assert!(t.is_empty(), "{t:?}");
+    assert_eq!(t, vec!["dry run: mknod fromuevent c 1 5", "dry run: chmod 600 fromuevent"]);
+}
+
+#[test]
+fn engine_uses_complete_device_numbers_from_one_source() {
+    for (minor, expected) in [
+        ("MINOR=4", "dry run: mknod mydev c 3 4"),
+        ("MINOR=4extra", "dry run: mknod mydev c 1 5"),
+        ("MINOR=4294967296", "dry run: mknod mydev c 1 5"),
+    ] {
+        let event = uevent_of(&[
+            "ACTION=add", "DEVPATH=/devices/x", "DEVNAME=mydev", "MAJOR=3", minor,
+        ]);
+        let (outcome, trace) = dry_run(
+            "mydev root:root 600\n",
+            &event,
+            vec![(b"devices/x/dev", b"1:5\ntrailing bytes")],
+        );
+        assert_eq!(outcome, Outcome::Publish, "{minor}");
+        assert_eq!(trace, [expected, "dry run: chmod 600 mydev"], "{minor}");
+    }
+}
+
+#[test]
+fn engine_warns_when_the_reported_device_name_reaches_its_limit() {
+    let max = mdevd::engine::PATH_MAX;
+    for length in [max - 2, max - 1] {
+        let devname = format!("DEVNAME={}", "x".repeat(length));
+        let event = uevent_of(&["ACTION=add", "DEVPATH=/devices/x", &devname, "MAJOR=1", "MINOR=5"]);
+        let (outcome, trace) = dry_run("", &event, vec![]);
+        assert_eq!(outcome, Outcome::Publish);
+        let warned = trace.iter().any(|line| line.starts_with("warn: device name too long:"));
+        assert_eq!(warned, length == max - 1);
+    }
 }
 
 #[test]
