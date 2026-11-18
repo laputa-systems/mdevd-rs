@@ -26,7 +26,7 @@ jobs:
       - name: test
         run: make test
       - name: clippy
-        run: cargo clippy --locked -q --all-targets
+        run: make lint
       - name: release x86_64 musl
         run: cargo build --locked --release --target x86_64-unknown-linux-musl
         env:
