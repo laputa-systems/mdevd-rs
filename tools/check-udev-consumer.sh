@@ -46,7 +46,7 @@ run_exchange() {
     exit 1
   fi
   cat "$log"
-  if ! rg -q "$witness" "$log"; then
+  if ! grep -Fq "$witness" "$log"; then
     echo "check-udev-consumer: missing witness for $test_case" >&2
     exit 1
   fi
