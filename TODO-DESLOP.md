@@ -196,6 +196,21 @@ short-input guard equivalent. The other two lookup variants differ
 only when the file contains exactly the marker and no device name.
 That malformed-file boundary and wider engine mutation stay in DSLP-4.
 
+The empty-name fixture reproduced a node operation with an empty
+name at `0405d2d` on native ARM64 Alpine 3.24.2. The engine now warns
+and skips node operations for explicit empty names in the event or
+sysfs. Missing names still use the device-path basename. All 15
+engine cases and Clippy passed in the network-sealed builder.
+
+In separate copies, changing `hay.len() < needle.len()` to `<=` or
+`==` in `find_sub` made
+`engine_distinguishes_an_empty_sysfs_name_from_an_absent_one` fail.
+The declared Linux `tools/measure-perf.sh` workload passed the
+storm capacity and idle gates. The storm's measured RSS stayed
+584 KiB across the 10,000-event sample and its descriptor count
+stayed at four. The idle probe reported zero CPU ticks. An
+independent `cargo bench --locked --offline --bench storm` also passed.
+
 ## Tickets
 
 
