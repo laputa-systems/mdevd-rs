@@ -1,0 +1,59 @@
+name: mdevd native mutation census
+
+on: pull_request
+
+permissions:
+  contents: read
+
+jobs:
+  census:
+    name: census (${{ matrix.name }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: config
+            files: src/config/mod.rs
+          - name: engine
+            files: src/engine/mod.rs
+          - name: event-io
+            files: src/uevent/mod.rs src/publish/mod.rs
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: taiki-e/install-action@4a76afe23f9e08d2d9550fb56e556444e8611d21
+        with:
+          tool: cargo-mutants@27.1.0
+      - name: Prepare the native Linux host
+        run: |
+          set -euo pipefail
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          unshare -U -n -r true
+          cargo fetch --locked
+      - name: List and run the same selected mutants
+        env:
+          MUTATION_FILES: ${{ matrix.files }}
+        run: |
+          set -euo pipefail
+          mkdir -p .work/selection .work/census .work/tmp
+          export TMPDIR="$PWD/.work/tmp"
+          read -r -a files <<< "$MUTATION_FILES"
+          options=()
+          for file in "${files[@]}"; do
+            options+=("--file=$file")
+          done
+          cargo mutants --list --json "${options[@]}" > .work/selection/identities.json
+          cargo mutants --baseline run --gitignore true --jobs 3 --timeout 15 --build-timeout 120 \
+            --output "$PWD/.work/census" "${options[@]}"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: mdevd-census-${{ matrix.name }}
+          path: |
+            .work/selection/identities.json
+            .work/census/mutants.out/outcomes.json
+          if-no-files-found: error
+          retention-days: 7
