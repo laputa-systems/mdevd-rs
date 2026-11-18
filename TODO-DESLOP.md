@@ -129,7 +129,15 @@ rejection of the next byte without creating a node. The 12 engine tests
 passed. Serial cargo-mutants 27.1.0 on the pinned ARM64 musl builder selected
 the same 14 `node_for` and path-limit identities at base `1570f52` and
 with the fixture. The original suite caught seven and missed seven. The
-fixture caught all 14. The live node and consumer effects remain open.
+fixture caught all 14.
+
+The [native KVM proof](https://github.com/laputa-systems/mdevd-rs/actions/runs/44373744734)
+passed for the same daemon and coldplug sources. The guest kernel's
+actual block device add produced the expected node identity, mode and
+framed record. Coldplug sync and graceful daemon shutdown also passed.
+The build harness now stops on failed preparation and supports the
+disposable builder's container root. The separate libudev-zero consumer
+and hardware coldplug checks remain open.
 
 ## Tickets
 
