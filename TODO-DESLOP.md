@@ -82,6 +82,24 @@ Set the same filter to `scan_decimal|scan_octal|validate_v1` for the
 14-identity scope. Retry the two exact timeout identities at 30
 seconds and reconcile the outcomes by mutant identity.
 
+With cargo-llvm-cov 0.9.1 and the pinned Rust llvm-tools component,
+the config, engine, publish and uevent suites passed 27 tests, with
+two live publication tests ignored. Branch coverage describes that
+scope only.
+
+| Source subtree | Lines | Branches |
+| --- | ---: | ---: |
+| `src/config` | 414/442 | 105/116 |
+| `src/engine` | 399/608 | 99/188 |
+| `src/publish` | 47/114 | 7/22 |
+| `src/uevent` | 92/159 | 26/42 |
+
+Run `cargo llvm-cov --locked --branch --test config --test engine --test publish --test uevent`
+in the same native image. The full instrumented suite stopped because
+the container denied the test's user-namespace creation. Full binary,
+lifecycle and live publication coverage still require their Linux
+verification environments.
+
 ## Tickets
 
 
