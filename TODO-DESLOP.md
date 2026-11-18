@@ -60,6 +60,46 @@ missing mknod and chmod transcript. Restoring the condition restored
 the pass. The release engine storm held RSS at 568 kB and file
 descriptors at four across the measured 10,000 events.
 
+Tests ran the seven config tests in the fleet's native ARM64 musl
+toolchain image. Cargo-mutants 27.1.0 tested 14 identities across
+`scan_decimal`, `scan_octal` and `validate_v1`. It caught seven and
+classified seven as unviable.
+
+The same runner tested all 147 identities in the two table-driven
+parser passes. After retrying both initial timeouts at 30 seconds,
+51 were caught, 88 were unviable, seven survived and one still hung.
+The repeated hang changes the first-pass input offset increment to
+multiplication, leaving offset zero at zero. Four survivors change
+the first-pass rule or environment counters. Three change when the
+second pass records path or command offsets. Those survivors remain
+open under DSLP-4.
+
+To repeat, run Cargo-mutants 27.1.0 on a fresh archive of
+`f5dacd088da84260022288780f678a449d280e6e` inside the pinned
+fleet musl image. Run
+`cargo mutants --baseline run --gitignore true --jobs 2 --timeout 10 --build-timeout 60 --file src/config/mod.rs --re 'first_pass|second_pass' -- --test config`.
+Set the same filter to `scan_decimal|scan_octal|validate_v1` for the
+14-identity scope. Retry the two exact timeout identities at 30
+seconds and reconcile the outcomes by mutant identity.
+
+With cargo-llvm-cov 0.9.1 and the pinned Rust llvm-tools component,
+the config, engine, publish and uevent suites passed 27 tests, with
+two live publication tests ignored. Branch coverage describes that
+scope only.
+
+| Source subtree | Lines | Branches |
+| --- | ---: | ---: |
+| `src/config` | 414/442 | 105/116 |
+| `src/engine` | 399/608 | 99/188 |
+| `src/publish` | 47/114 | 7/22 |
+| `src/uevent` | 92/159 | 26/42 |
+
+Run `cargo llvm-cov --locked --branch --test config --test engine --test publish --test uevent`
+in the same native image. The full instrumented suite stopped because
+the container denied the test's user-namespace creation. Full binary,
+lifecycle and live publication coverage still require their Linux
+verification environments.
+
 ## Tickets
 
 
@@ -68,8 +108,8 @@ descriptors at four across the measured 10,000 events.
 
 - **Area:** deslop · tests
 - **Where:** test suites and CI
-- **Problem:** Coverage and mutation results are unmeasured; no deslop mutation lane exists.
-- **Recommendation:** Run the deslop Tests step. Accept: no undispositioned survivor in critical code, the test cost budget holds, and the lane is green where the tools are mirrored.
+- **Problem:** Native ARM64 parser mutation has seven survivors and one confirmed hang. Coverage, the remaining device and publication decisions, and whole-change retention are open.
+- **Recommendation:** Disposition the parser identities and qualify engine, lifecycle and publication checks with ordinary coverage and isolated native evidence. Accept a measured fail-closed whole-change lane before closing.
 - **Fix with:** deslop
 - **Effort:** M
 
