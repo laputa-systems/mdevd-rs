@@ -19,7 +19,7 @@ admission, test fixtures and harnesses against their callers and tests.
 | Line / branch coverage | Not recorded | 1,657/2,114 lines; 390/566 branches in the [hosted trial](https://github.com/laputa-systems/mdevd-rs/actions/runs/44360634905/job/135000705986), before later tests; final coverage not measured |
 | Escape-hatch matches | 70 source, 322 test | 68 source, 333 test; `unsafe`, allow attributes, `unwrap()` and `expect()` occurrences, including comments |
 | Dead code | Not quantified | Discarded first-pass counter and unused second-pass return removed; zero dependencies removed. Removal line count not separately recorded |
-| Findings | P1: 0; P2: 8 filed, including five campaign steps and DSLP-6; P3: 1; P4: 0 | Six P2 closed, DSLP-7 and DSLP-8 open; DSLP-9 open. No P1/P3/P4 fixed. Two product defects fixed: invalid UTF-8 CLI panic and empty device-name node operation |
+| Findings | P1: 0; P2: 8 filed, including five campaign steps and DSLP-6; P3: 1; P4: 0 | Six P2 closed; DSLP-7 and DSLP-8 re-ranked P3 (missing evidence, no demonstrated regression); DSLP-9 open. No P1/P3/P4 fixed. Two product defects fixed: invalid UTF-8 CLI panic and empty device-name node operation |
 | Performance | No matched campaign baseline | Storm RSS/fd and idle resource gates passed in recorded runs; timing regression verdict inconclusive without qualified matched runs. DSLP-7 and DSLP-8 remain environment-blocked pending a quiet native host and real devices |
 | Escaped regressions | Not measured | None demonstrated by completion review; real hardware coldplug and physical devices remain unverified |
 
@@ -76,7 +76,7 @@ campaign should preserve those costs when closing a step. No shared file was
 changed here.
 
 ## Tickets
-### DSLP-7 · P2 · Measure real event throughput and latency
+### DSLP-7 · P3 · Measure real event throughput and latency
 
 - **Area:** Bench
 - **Where:** benches/handle.rs; benches/storm.rs; tools/measure-perf.sh
@@ -86,7 +86,7 @@ changed here.
 - **Effort:** L
 
 
-### DSLP-8 · P2 · Strengthen resource and timing regression evidence
+### DSLP-8 · P3 · Strengthen resource and timing regression evidence
 
 - **Area:** Bench
 - **Where:** benches/storm.rs; tools/measure-perf.sh; docs/perf.md
