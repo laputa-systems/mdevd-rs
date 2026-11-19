@@ -332,7 +332,7 @@ fn fresh_builder() -> Builder {
     }
 }
 
-fn second_pass(buf: &mut [u8]) -> Result<(Vec<Rule>, Vec<EnvMatch>), ConfigError> {
+fn second_pass(buf: &mut [u8]) -> Result<Vec<Rule>, ConfigError> {
     let mut mark = 0usize;
     let mut col0 = 0usize;
     let mut pos = 0usize;
@@ -547,7 +547,7 @@ fn second_pass(buf: &mut [u8]) -> Result<(Vec<Rule>, Vec<EnvMatch>), ConfigError
             });
         }
     }
-    Ok((rules, env))
+    Ok(rules)
 }
 
 /// Parse `input` (hooks included). The daemon
@@ -560,7 +560,7 @@ pub fn parse(input: &[u8]) -> Result<Config, ConfigError> {
     buf.extend_from_slice(input);
     buf.push(0);
     let rule_limit = first_pass(&buf)?;
-    let (mut rules, _) = second_pass(&mut buf)?;
+    let mut rules = second_pass(&mut buf)?;
     debug_assert!(rules.len() <= rule_limit + 1);
     // Mirrors main: the catchall sorts last and matches anything unmatched.
     rules.push(Rule {
