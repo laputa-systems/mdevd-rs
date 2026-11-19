@@ -105,16 +105,42 @@ resource gates passed on the declared Linux workload. Branch coverage was a
 report for config, engine, publish and uevent, not a gate; full lifecycle and
 live publication coverage require their Linux environments.
 
+
+DSLP-5 scanned the pinned nightly on Alpine 3.24.2 ARM64, default features
+(no Cargo features are declared). `cargo rustc --locked --lib -- -D dead_code`
+and the same command for each binary with `-D unreachable_pub` also enabled
+passed with no findings. `cargo machete` 0.10.1 found no unused dependencies;
+`libc` is used by the Linux adapters. No allowlist or udeps investigation was
+needed.
+
+The private `second_pass` returned its environment-match vector after cloning
+its entries into rules, but `parse` discarded that vector. The cut retains the
+local vector and removes only its unused return. `second_pass` has one caller,
+`parse`; both binaries, integration tests, three benches, examples, guest and
+package entry points were checked. The public configuration output and CLI,
+configuration syntax and wire contracts are unchanged. The ARM64 musl default
+build's config suite passed 9 tests and both handling parity tests passed.
+Linux x86_64 and privileged guest consumers were not rerun; no platform-specific
+code changed. Commit `f3fb00e` contains the cut.
+
+The DSLP-4 counter was already removed. Numeric-action guard masks remain as
+fail-closed checks on parser state; the recorded equivalent mutations alone do
+not justify weakening that invariant. Intake counters are public and asserted
+by intake tests; the daemon reads overruns. The temporary-link counter names
+live symlinks. `Rule` fields and regex patterns serve config corpus output;
+`NullOps` and `FakeOps` serve tests and benches. The three benches are invoked
+by `tools/measure-perf.sh`; examples and guest scripts invoke the two packaged
+binaries. No additional behavior-preserving cuts were proven in the checked
+layers, flags, state machines, dependencies, tests, tooling and docs.
+
+On the same builder, `make lint` passed. `make test` exited 2 at both base
+`c1c98ca` and the cut: `intake::adversarial_spoof_flood_and_variable_limit`
+and `intake::adversarial_truncation_precedes_userspace_filter` both failed
+because unshare was denied. A supplementary `cargo test --locked
+--no-fail-fast` comparison with strace installed found the same six failures
+at base and candidate: those two, `bins_drop_policy_warns_and_holds_output`,
+`bins_hup_retain_serving`, `daemon::daemon_reload_matrix`, and
+`daemon::daemon_userspace_output_drops_spoofed`, all blocked by unshare.
+The wrapper step after Cargo in `make test` was not reached.
+
 ## Tickets
-
-
-
-
-### DSLP-5 · P2 · Dead code: tools and debloat
-
-- **Area:** deslop · dead code
-- **Where:** whole repository
-- **Problem:** No dead-code scan has run.
-- **Recommendation:** Run the deslop Dead code step. Accept: tools clean or allowlisted with reasons; walk-backs filed as Needs owner tickets.
-- **Fix with:** deslop
-- **Effort:** M
