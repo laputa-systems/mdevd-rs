@@ -44,3 +44,42 @@ Idle (3 seconds):
 
 Result: `measure-perf: OK`. No threshold tripped. The wide coldplug spread
 tracks host load, not the implementation.
+
+## Benchmark entrypoint
+
+`make bench` is manual-only and selects the full registry. Use
+`make bench-list` to list workloads, estimated costs and requirements, and
+`make bench-check BENCH_ARGS='--tier edit'` to check a selection without
+running it. `make bench BENCH_ARGS='--tier change --area engine --skip storm'`
+selects handling; `--workload NAME` selects a workload, `--area AREA` selects
+an area, and `--skip NAME` removes a workload. Repeat selectors to form a
+union within each kind; kinds intersect. Unknown selectors and an empty result
+fail. `--dry-run` prints selected commands and exclusions without writing.
+
+The registry assigns driver tests to Edit, individual storm, parse and handle
+benches to Change, the combined `measure-perf.sh` to Scenario, and the two
+KVM guest checks to Full. The latter are correctness and lifecycle checks,
+not latency measurements. Change and Scenario require the pinned nightly and
+Linux. Timing workloads also require `perf-gate-ready` before and after the
+run; a failed readiness check makes timing unavailable. Full requires an
+x86_64 Linux KVM host and the guest harness prerequisites in
+[testing.md](testing.md). The registry's costs are estimates; guest costs are
+environment-dependent. `cargo` builds its own current artifacts. The guest
+harnesses maintain their own pinned inputs and outputs under `.work/`.
+
+Each execution writes a dated `.work/bench/` directory with workload logs and
+`summary.txt`, including exclusions, status and elapsed time. Timings remain
+inconclusive without a matched baseline, even if a command succeeds. Storm's
+RSS and fd gates apply to the benchmark process after warmup, not a concurrent
+process tree or absolute RSS. Idle CPU ticks cover the daemon process, not
+wakeups. Coldplug uses a synthetic 300-file tree; parse and handling use one
+fixture and handling uses `FakeOps`. These do not establish real-device storm
+throughput or tail latency. The guest commands have their own output paths
+under `.work/` and require their prerequisites before use.
+
+For diagnosis, collect Linux `perf record` or `strace -c` separately from
+timed runs; instrumentation changes execution cost and process or guest
+scope must be recorded. Allocation attribution and guest-wide profiling are
+not currently provided. The combined performance script pipes some benchmark
+commands, so its success alone cannot establish that every benchmark passed;
+run the individual Change workloads for direct exit status.

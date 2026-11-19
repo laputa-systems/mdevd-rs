@@ -1,9 +1,17 @@
 Prefix: DSLP
-Next: 7
+Next: 10
 
 Deslop campaign backlog ([plan](https://github.com/laputa-systems/stuff/blob/main/docs/campaigns/deslop.md), tier A). One agent works this file with the `deslop` skill: take the lowest-numbered open ticket whose area does not start with `Needs owner ·`. After DSLP-5, work the open P1 and P2 findings, then fill in `## Report` below.
 
 ## Report
+
+Bench adds a tiered shell entrypoint over the existing harnesses. The synthetic
+storm's growth and fd gates do not cover absolute daemon footprint, wakeups,
+real-device throughput or tail latency; timings lack an accepted comparison.
+DSLP-7 and DSLP-8 record these outcome gaps, and DSLP-9 records attribution
+and pipeline failure visibility. Guest workloads remain manual and require KVM. In the ARM64 Alpine builder,
+`make bench BENCH_ARGS='--tier change --workload storm'` passed its RSS and
+fd gates in 12 s; the Edit tier runs the selector and preflight self-test.
 
 Ground (DSLP-1) passed at base `566b650c1676d83714bed9108c9d0d3f3290d38f`. Both hosted Linux runs passed 67 tests with eight separately enabled privileged cases ignored. [Verification](AGENTS.md#verification) lists the test costs, contracts, and guest checks.
 
@@ -144,3 +152,31 @@ at base and candidate: those two, `bins_drop_policy_warns_and_holds_output`,
 The wrapper step after Cargo in `make test` was not reached.
 
 ## Tickets
+### DSLP-7 · P2 · Measure real event throughput and latency
+
+- **Area:** Bench
+- **Where:** benches/handle.rs; benches/storm.rs; tools/measure-perf.sh
+- **Problem:** FakeOps synthetic events do not establish completed real daemon throughput or tail latency; a user-visible regression may be missed.
+- **Recommendation:** Add a correctness-checked production-path workload and matched baseline with a suitable latency distribution.
+- **Fix with:** bench-pyramid
+- **Effort:** L
+
+
+### DSLP-8 · P2 · Strengthen resource and timing regression evidence
+
+- **Area:** Bench
+- **Where:** benches/storm.rs; tools/measure-perf.sh; docs/perf.md
+- **Problem:** RSS growth after warmup misses an absolute footprint increase; idle ticks omit wakeups and coldplug and parse timings lack an accepted baseline. Regressions in user-visible resources can pass.
+- **Recommendation:** Define scoped absolute resource anchors and wakeup measurements and compare timings against an accepted interleaved baseline on a qualified host.
+- **Fix with:** bench-pyramid
+- **Effort:** L
+
+
+### DSLP-9 · P3 · Add benchmark attribution and robust harness failure propagation
+
+- **Area:** Bench
+- **Where:** tools/measure-perf.sh; docs/perf.md
+- **Problem:** The piped cargo bench commands can hide a failure and no CPU, allocation, syscall or guest attribution path is documented; diagnosing a change requires extra investigation.
+- **Recommendation:** Propagate each harness status and document separate perf and syscall profiling runs with their scope and overhead.
+- **Fix with:** bench-pyramid
+- **Effort:** M
