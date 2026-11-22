@@ -19,6 +19,8 @@ Musl release builds link with `mold` via `RUSTFLAGS="-Clinker=mold -Clinker-flav
 
 ## Verification
 
+`make clean` removes the checkout’s ordinary `./target` directory. It refuses a file or symlink at that path.
+
 - Two hosted x86_64 Linux runs of `make test` each passed 67 cases with eight privileged cases ignored. Elapsed time was 4.65 s with a fresh Cargo target and 2.57 s warm. The hosted Clippy step took about one second on the warm tree. [Cost measurement](https://github.com/laputa-systems/mdevd-rs/pull/6)
 - `tests/bins.rs`, `tests/config.rs`, and `tests/parity.rs` exercise daemon and coldplug commands, configuration grammar, and golden behavior. `tests/engine.rs` covers policy decisions and adapter behavior.
 - `tests/publish.rs` and the framing tests under `src/publish/` cover processed event output. The combined guest harness separately checks the libudev-zero consumer and daemon shutdown with real Linux events.
