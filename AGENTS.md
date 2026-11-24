@@ -4,6 +4,8 @@ Linux Rust replacement for the mdevd hotplug daemon and the
 `mdevd-coldplug` helper. Deny by default; fail closed on every error
 path; no shell, no firmware loading, no hooks.
 
+The roadmap, [docs/roadmap.md](docs/roadmap.md), holds all current and future work; its Status is the resume point.
+
 ## Commands
 
 ```sh
