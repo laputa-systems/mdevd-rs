@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "tools": {
+    "mold": {
+      "assets": {
+        "aarch64-unknown-linux-musl": {
+          "name": "mold-3.0.0-aarch64-linux-musl.tar.gz",
+          "sha256": "c2e8e5a14c397036e070630d758956913ce4318834f3ff9000bd95809d3c1090",
+          "size": 7667019
+        },
+        "x86_64-unknown-linux-musl": {
+          "name": "mold-3.0.0-x86_64-linux-musl.tar.gz",
+          "sha256": "4ff71e43c5a73a7c46e7ac93c676e78c22981eb9b54218268aef01949dab92ab",
+          "size": 7979082
+        }
+      },
+      "product": "mold",
+      "repository": "joshuarli/mold",
+      "tag": "mold-musl-3.0.0-5d3f385",
+      "version": "3.0.0"
+    },
+    "rg": {
+      "assets": {
+        "aarch64-apple-darwin": {
+          "name": "rg-aarch64-apple-darwin.tar.xz",
+          "sha256": "3ade1c9b11ccd437722cc26218db05309d8e391123a20a51928322b73920bfe1",
+          "size": 952212
+        },
+        "aarch64-unknown-linux-musl": {
+          "name": "rg-aarch64-unknown-linux-musl.tar.xz",
+          "sha256": "d525d2ea985e861484a4346266c07a9149903ec09193727f2630956014ee0133",
+          "size": 1184636
+        },
+        "x86_64-unknown-linux-musl": {
+          "name": "rg-x86_64-unknown-linux-musl.tar.xz",
+          "sha256": "be034c84f4991b3295f50e26a3fc82cacedc05b86cecbe9f505eb9d5c804041a",
+          "size": 1476128
+        }
+      },
+      "product": "rg",
+      "repository": "laputa-systems/rg",
+      "tag": "release-ce347a1b5fe381a17d5bee20d594713263073450",
+      "version": ""
+    }
+  }
+}
