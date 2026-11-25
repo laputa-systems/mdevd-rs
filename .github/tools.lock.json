@@ -5,18 +5,18 @@
       "assets": {
         "aarch64-unknown-linux-musl": {
           "name": "mold-3.0.0-aarch64-linux-musl.tar.gz",
-          "sha256": "2d904b170d804008ada80157f8f18d9920d3ccc1e49e27d80123d01e386668f3",
-          "size": 7648955
+          "sha256": "c2e8e5a14c397036e070630d758956913ce4318834f3ff9000bd95809d3c1090",
+          "size": 7667019
         },
         "x86_64-unknown-linux-musl": {
           "name": "mold-3.0.0-x86_64-linux-musl.tar.gz",
-          "sha256": "d6e47d61b74961a60868ad308acad4dfdc199e7ec97d61d65728e6ef1d6c2565",
-          "size": 7963647
+          "sha256": "4ff71e43c5a73a7c46e7ac93c676e78c22981eb9b54218268aef01949dab92ab",
+          "size": 7979082
         }
       },
       "product": "mold",
       "repository": "joshuarli/mold",
-      "tag": "mold-musl-3.0.0-cfb4aab",
+      "tag": "mold-musl-3.0.0-5d3f385",
       "version": "3.0.0"
     },
     "rg": {
